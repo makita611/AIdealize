@@ -798,15 +798,20 @@ body {
 
 /* ====== FLOATING CTA (SP) ====== */
 .float-cta {
-  display: none; position: fixed; bottom: 20px; left: 16px; right: 16px;
-  z-index: 800;
-  background: var(--line); color: var(--white);
-  text-align: center; padding: 16px; border-radius: 4px;
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 900;
+  background: var(--white); color: var(--ink);
+  text-align: center; padding: 14px 16px;
   font-size: 0.97rem; font-weight: 700; text-decoration: none;
-  box-shadow: 0 4px 20px rgba(6,199,85,0.45);
+  box-shadow: 0 -3px 16px rgba(0,0,0,0.12);
   letter-spacing: 0.04em;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
 }
-@media (max-width: 640px) {
+.float-cta.visible {
+  opacity: 1; pointer-events: auto;
+}
+@media (max-width: 768px) {
   .float-cta { display: block; }
   .contact { padding-bottom: 100px; }
 }
@@ -1125,48 +1130,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </section>
 
-<!-- SOAP NOTES -->
-<section class="soap-section" id="soap">
-  <div class="container">
-    <div class="section-label reveal">SOAP NOTES</div>
-    <h2 class="section-title reveal">SOAPノートとは？<br><span class="nursing-color">S・O・A・Pの4つの視点</span>で記録する方法です。</h2>
-    <p class="section-desc reveal">
-      患者の主訴・客観所見・アセスメント・計画を構造的に整理する看護記録の形式です。<br>
-      はなまるAIは、話した内容を自動でこの4項目に分類・整理します。
-    </p>
-    <div class="soap-cards reveal">
-      <div class="soap-card">
-        <div class="soap-letter">S</div>
-        <div class="soap-word">SUBJECTIVE — 主観的情報</div>
-        <div class="soap-title">患者さんが語った言葉</div>
-        <div class="soap-desc">患者本人や家族から得た訴え・感想・気持ち。「痛い」「眠れない」などの本人の言葉をそのまま記録します。</div>
-        <div class="soap-example">例：「昨日から右足が重くて歩きにくい」「食欲はある」</div>
-      </div>
-      <div class="soap-card">
-        <div class="soap-letter">O</div>
-        <div class="soap-word">OBJECTIVE — 客観的情報</div>
-        <div class="soap-title">看護師が観察・測定した情報</div>
-        <div class="soap-desc">バイタルサイン・身体所見・検査値など、客観的に確認できる事実を記録します。</div>
-        <div class="soap-example">例：BP 138/82 mmHg、SpO2 97%、右下腿に浮腫（+）</div>
-      </div>
-      <div class="soap-card">
-        <div class="soap-letter">A</div>
-        <div class="soap-word">ASSESSMENT — アセスメント</div>
-        <div class="soap-title">看護師の臨床判断・評価</div>
-        <div class="soap-desc">SとOをもとにした看護師の判断・問題の評価・課題の分析を記録します。AIが補助的なアセスメントを提案します。</div>
-        <div class="soap-example">例：血圧は許容範囲内だが、浮腫の増悪に注意が必要な状態。</div>
-      </div>
-      <div class="soap-card">
-        <div class="soap-letter">P</div>
-        <div class="soap-word">PLAN — 計画・対応方針</div>
-        <div class="soap-title">今後の看護計画・アクション</div>
-        <div class="soap-desc">次回訪問時の観察ポイント・処置計画・多職種への申し送り事項などを記録します。</div>
-        <div class="soap-example">例：次回訪問で浮腫の変化を評価。状態悪化時は主治医へ報告。</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- DOCUMENTS -->
 <section class="documents" id="documents">
   <div class="container">
@@ -1176,7 +1139,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       第一弾として、訪問看護で最も負担の大きい<strong>SOAPノート（看護記録）</strong>から対応開始。<br>
       今後、訪問看護に必要な書類を幅広く追加していく予定です。
     </p>
-    <div class="doc-grid reveal">
+    <div class="doc-grid reveal" style="max-width:480px;margin:0 auto;">
 
       <!-- メイン：SOAPノート -->
       <div class="doc-card main">
@@ -1190,62 +1153,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
 
-      <!-- 訪問看護報告書 -->
-      <div class="doc-card">
-        <div class="doc-status soon">🔜 近日対応予定</div>
-        <div class="doc-icon">📝</div>
-        <div class="doc-name">訪問看護報告書</div>
-        <div class="doc-yosiki">主治医への月次報告書</div>
-        <div class="doc-desc">
-          月1回、主治医へ提出する患者の状態変化・実施した看護内容の報告書。SOAPデータをもとに自動でドラフト作成する機能を開発中です。
-        </div>
-      </div>
-
-      <!-- アセスメントシート -->
-      <div class="doc-card">
-        <div class="doc-status soon">🔜 近日対応予定</div>
-        <div class="doc-icon">🔍</div>
-        <div class="doc-name">初回訪問アセスメントシート</div>
-        <div class="doc-yosiki">新規利用者 初回評価記録</div>
-        <div class="doc-desc">
-          新規患者の初回訪問時の情報収集・アセスメント記録。話した内容からADL・IADL・既往歴・看護ニーズを自動で整理します。
-        </div>
-      </div>
-
-      <!-- 看護計画書 -->
-      <div class="doc-card">
-        <div class="doc-status future">📅 対応予定</div>
-        <div class="doc-icon">📊</div>
-        <div class="doc-name">訪問看護計画書</div>
-        <div class="doc-yosiki">看護計画・目標管理</div>
-        <div class="doc-desc">
-          患者ごとの看護目標・ケア計画を記載する書類。定期的な見直しが必要で、SOAPデータをもとにした更新支援を予定しています。
-        </div>
-      </div>
-
-      <!-- ヒヤリハット -->
-      <div class="doc-card">
-        <div class="doc-status future">📅 対応予定</div>
-        <div class="doc-icon">⚠️</div>
-        <div class="doc-name">ヒヤリハット・事故報告書</div>
-        <div class="doc-yosiki">リスクマネジメント書類</div>
-        <div class="doc-desc">
-          ヒヤリハット事例の報告。発生状況・原因・再発防止策を話すだけで記録が完成。緊急対応後の記録業務を大幅に軽減します。
-        </div>
-      </div>
-
-      <!-- 多職種連携 -->
-      <div class="doc-card">
-        <div class="doc-status future">📅 対応予定</div>
-        <div class="doc-icon">🤝</div>
-        <div class="doc-name">多職種連携・申し送りメモ</div>
-        <div class="doc-yosiki">ケアマネ・主治医・リハビリ連携</div>
-        <div class="doc-desc">
-          ケアマネジャー・主治医・リハビリスタッフへの申し送り記録。会議中の発言を録音するだけで、申し送り記録を自動生成します。
-        </div>
-      </div>
-
     </div>
+    <p class="reveal" style="text-align:center;margin-top:24px;font-size:0.88rem;color:var(--text2);">
+      訪問看護報告書・初回アセスメント・計画書・ヒヤリハット報告・多職種連携メモにも順次対応予定
+    </p>
   </div>
 </section>
 
@@ -1720,6 +1631,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   window.addEventListener('scroll', function(){
     nav.classList.toggle('scrolled', window.scrollY > 10);
   });
+
+  // スマホ追従CTA: 少しスクロールしたら表示、#contactとfooterに近づいたら非表示
+  var floatCta = document.querySelector('.float-cta');
+  var contactSection = document.getElementById('contact');
+  var siteFooter = document.querySelector('.site-footer');
+  if (floatCta && contactSection) {
+    window.addEventListener('scroll', function() {
+      var scrollY = window.scrollY;
+      var contactTop = contactSection.getBoundingClientRect().top + scrollY;
+      var footerTop = siteFooter ? siteFooter.getBoundingClientRect().top + scrollY : Infinity;
+      var hideThreshold = Math.min(contactTop, footerTop) - window.innerHeight + 60;
+      var show = scrollY > 200 && scrollY < hideThreshold;
+      floatCta.classList.toggle('visible', show);
+    });
+  }
 
   // Demo tabs
   document.querySelectorAll('.demo-tab-btn').forEach(function(tab) {
