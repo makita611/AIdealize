@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>看護記録送信</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+  :root {
+    --primary: #06C755;
+    --primary-light: #06C755;
+    --accent: #f0a500;
+    --bg: #f5f7f6;
+    --surface: #ffffff;
+    --text: #1a2620;
+    --text-muted: #6b7c78;
+    --border: #d4e0dc;
+    --danger: #c0392b;
+    --success: #06C755;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(26,107,90,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 40px 0;
+  }
+
+  header {
+    width: 100%;
+    background: var(--primary);
+    padding: 20px 24px 16px;
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+
+  header .logo {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    opacity: 0.75;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  header .subtitle {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ---- 注意書きカード ---- */
+  .notice-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px 18px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--accent);
+  }
+
+  .notice-card h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .notice-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .notice-list li {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    padding-left: 18px;
+    position: relative;
+  }
+
+  .notice-list li::before {
+    content: '!';
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* ---- アップロードカード ---- */
+  .upload-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .upload-card h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+    position: relative;
+  }
+
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--primary-light);
+    background: #eaf4f1;
+  }
+
+  .file-drop input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .file-drop .icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .file-drop .label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .file-drop .hint {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .file-selected {
+    background: #eaf4f1;
+    border-color: var(--primary-light);
+    border-style: solid;
+  }
+
+  .file-info {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #eaf4f1;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-info .fname {
+    font-weight: 500;
+    color: var(--primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-info .fsize {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ---- プログレス ---- */
+  .progress-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .progress-wrap.visible { display: flex; }
+
+  .progress-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar-bg {
+    background: var(--border);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .status-msg {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    min-height: 18px;
+  }
+
+  /* ---- ボタン ---- */
+  .btn-submit {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  .btn-submit:not(:disabled):hover {
+    background: var(--primary-light);
+  }
+
+  /* ---- 完了画面 ---- */
+  .done-card {
+    display: none;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .done-card.visible { display: flex; }
+
+  .done-card .done-icon {
+    width: 64px;
+    height: 64px;
+    background: #eaf4f1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+
+  .done-card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .done-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  /* ---- 音声圧縮中 ---- */
+  .compressing-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .compressing-wrap.visible { display: flex; }
+  .compress-row { display: flex; align-items: center; gap: 10px; }
+  .compress-spinner {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .compress-text { font-size: 13px; font-weight: 500; color: var(--accent); }
+  .compress-note { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.7; }
+
+  /* ---- エラー ---- */
+  .error-msg {
+    display: none;
+    background: #fdecea;
+    border-left: 4px solid var(--danger);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--danger);
+    line-height: 1.7;
+  }
+
+  .error-msg.visible { display: block; }
+
+  footer {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Hanamaru AI / 看護記録</div>
+  <h1>看護記録 音声送信</h1>
+  <div class="subtitle">音声ファイルをアップロードして記録を自動生成</div>
+  <div class="subtitle" id="versionBadge" style="opacity:0.55; font-size:10px; margin-top:2px;"></div>
+</header>
+
+<div class="container">
+
+  <!-- 注意書き -->
+  <div class="notice-card">
+    <h2>⚠ ご利用前にお読みください</h2>
+    <ul class="notice-list">
+      <li>AIが出力した内容は必ずご確認・修正してください。最終責任は利用者様にあります。</li>
+      <li>データ送付には数分かかります。完了はLINEでお知らせします。完了前に何度も送信しないでください。</li>
+      <li>個人情報が含まれる音声です。ファイルの取り扱いにご注意ください。SOAPデータはファイルを送付した本人しか閲覧できません。</li>
+      <li>通信環境の良い場所でご使用ください（ファイルが大きい場合送信時間がかかります。）。</li>
+      <li>対応形式：mp3 / m4a / wav / aac（大きいファイルは自動で圧縮してから送信します）</li>
+    </ul>
+  </div>
+
+  <!-- アップロードカード -->
+  <div class="upload-card" id="uploadCard">
+    <h2>📂 音声ファイルを選択</h2>
+
+    <div class="file-drop" id="fileDrop">
+      <input type="file" id="fileInput" accept=".mp3,.m4a,.wav,.aac,audio/*">
+      <span class="icon">🎙️</span>
+      <span class="label">タップしてファイルを選択</span>
+      <span class="hint">mp3 / m4a / wav / aac・大きいファイルは自動圧縮</span>
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <span>🎵</span>
+      <span class="fname" id="fileName">—</span>
+      <span class="fsize" id="fileSize">—</span>
+    </div>
+
+    <!-- 音声圧縮中 -->
+    <div class="compressing-wrap" id="compressingWrap">
+      <div class="compress-row">
+        <div class="compress-spinner"></div>
+        <div class="compress-text">音声を最適化中...</div>
+      </div>
+      <div class="compress-note">モノラル16kHzに変換してファイルサイズを小さくしています<br>このまましばらくお待ちください</div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressPhase">アップロード中...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status-msg" id="statusMsg">しばらくお待ちください</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="btn-submit" id="submitBtn" disabled>送信する</button>
+  </div>
+
+  <!-- 完了カード -->
+  <div class="done-card" id="doneCard">
+    <div class="done-icon">✅</div>
+    <h2>送信完了！</h2>
+    <p>ファイルの受付が完了しました。<br>処理が終わり次第、<strong>LINEにSOAP形式にまとめた文章をお送りします</strong>。<br>このページは閉じてお待ちください。</p>
+  </div>
+
+</div>
+
+<footer>
+  Powered by はなまるAI / AIdealize Inc.<br>
+  ご不明点は管理者までお問い合わせください。<br>
+  <span id="footerVersion" style="opacity:0.6;"></span>
+</footer>
+
+<script>
+// =============================================
+// バージョン
+// =============================================
+const VERSION = 'v2026.04.09';
+document.getElementById('versionBadge').textContent = VERSION;
+document.getElementById('footerVersion').textContent = VERSION;
+
+// =============================================
+// 設定（サーバー側URLのみ変更してください）
+// =============================================
+const UPLOAD_ENDPOINT = 'https://aidealize.com/liff/nursing/upload/upload.php';
+
+// =============================================
+// LIFF初期化
+// =============================================
+const LIFF_ID = '2009699856-sbOqMXR4';
+let lineUserId = null;
+
+  async function initLiff() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+      const profile = await liff.getProfile();
+      lineUserId = profile.userId;
+    } catch (e) {
+      showError('LINE認証に失敗しました。LINEアプリから開き直してください。');
+    }
+  }
+
+initLiff();
+
+// =============================================
+// ファイル選択
+// =============================================
+const fileInput = document.getElementById('fileInput');
+const fileDrop  = document.getElementById('fileDrop');
+const fileInfo  = document.getElementById('fileInfo');
+const fileName  = document.getElementById('fileName');
+const fileSize  = document.getElementById('fileSize');
+const submitBtn = document.getElementById('submitBtn');
+let selectedFile = null;
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+});
+
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  fileDrop.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  // 500MB超はブラウザメモリ限界のため不可
+  if (file.size > 500 * 1024 * 1024) {
+    showError('ファイルが大きすぎます（500MB以上）。録音を分割してお試しください。');
+    return;
+  }
+
+  const allowed = ['audio/mpeg','audio/mp4','audio/m4a','audio/wav','audio/aac','audio/x-m4a','audio/webm','audio/ogg'];
+  if (!allowed.includes(file.type) && !file.name.match(/\.(mp3|m4a|wav|aac|webm|ogg)$/i)) {
+    showError('対応していないファイル形式です。mp3 / m4a / wav / aac をお使いください。');
+    return;
+  }
+
+  selectedFile = file;
+  fileName.textContent = file.name;
+  const sizeStr = formatSize(file.size);
+  fileSize.textContent = file.size > COMPRESS_THRESHOLD ? sizeStr + ' → 自動圧縮' : sizeStr;
+  fileInfo.classList.add('visible');
+  fileDrop.classList.add('file-selected');
+  submitBtn.disabled = false;
+  hideError();
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// =============================================
+// 音声圧縮（OfflineAudioContext → 16kHz モノラル WAV）
+// =============================================
+const COMPRESS_THRESHOLD = 3 * 1024 * 1024; // 3MB以上は圧縮
+
+async function compressAudio(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const tmpCtx      = new (window.AudioContext || window.webkitAudioContext)();
+  const audioBuffer = await tmpCtx.decodeAudioData(arrayBuffer);
+  await tmpCtx.close();
+
+  const TARGET_RATE = 16000;
+  const numFrames   = Math.ceil(audioBuffer.duration * TARGET_RATE);
+  const offCtx      = new OfflineAudioContext(1, numFrames, TARGET_RATE);
+  const src         = offCtx.createBufferSource();
+  src.buffer        = audioBuffer;
+  src.connect(offCtx.destination);
+  src.start(0);
+
+  const rendered = await offCtx.startRendering();
+  const wavBlob  = encodeWav(rendered);
+  return new File([wavBlob], 'compressed.wav', { type: 'audio/wav' });
+}
+
+function encodeWav(audioBuffer) {
+  const samples    = audioBuffer.getChannelData(0);
+  const numSamples = samples.length;
+  const sampleRate = audioBuffer.sampleRate;
+  const byteLen    = numSamples * 2;
+  const buf        = new ArrayBuffer(44 + byteLen);
+  const view       = new DataView(buf);
+
+  wStr(view,  0, 'RIFF'); view.setUint32( 4, 36 + byteLen, true);
+  wStr(view,  8, 'WAVE'); wStr(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22,  1, true); view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true); wStr(view, 36, 'data');
+  view.setUint32(40, byteLen, true);
+
+  let offset = 44;
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+function wStr(view, offset, str) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+// =============================================
+// 送信
+// =============================================
+submitBtn.addEventListener('click', async () => {
+  if (!selectedFile || !lineUserId) return;
+
+  submitBtn.disabled = true;
+  fileInput.disabled = true;
+  hideError();
+
+  // ── 圧縮フェーズ ──────────────────────────────
+  let fileToUpload = selectedFile;
+  if (selectedFile.size > COMPRESS_THRESHOLD) {
+    showCompressing();
+    try {
+      fileToUpload = await compressAudio(selectedFile);
+      fileSize.textContent = formatSize(selectedFile.size) + ' → ' + formatSize(fileToUpload.size);
+    } catch (e) {
+      hideCompressing();
+      showError('音声の変換に失敗しました。ファイルが正しい音声ファイルかご確認ください。');
+      submitBtn.disabled = false;
+      fileInput.disabled = false;
+      return;
+    }
+    hideCompressing();
+  }
+
+  // ── アップロードフェーズ ───────────────────────
+  showProgress();
+
+  const formData = new FormData();
+  formData.append('audio', fileToUpload);
+  formData.append('line_user_id', lineUserId);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', UPLOAD_ENDPOINT);
+
+  xhr.upload.addEventListener('progress', e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      setProgress(pct, 'アップロード中...', `${pct}%`);
+      if (pct === 100) {
+        showDone(); // ←アップロード完了で即完了画面
+      }
+    }
+  });
+
+  xhr.addEventListener('load', () => {
+    if (xhr.status === 200) {
+      showDone(); // ←サーバーの応答を待たずに完了画面
+    } else {
+      hideProgress();
+      showError('送信に失敗しました（' + xhr.status + '）。');
+      submitBtn.disabled = false;
+      fileInput.disabled = false;
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    hideProgress();
+    showError('通信エラーが発生しました。電波の良い場所で再度お試しください。');
+    submitBtn.disabled = false;
+    fileInput.disabled = false;
+  });
+
+  xhr.send(formData);
+});
+
+// =============================================
+// UI helpers
+// =============================================
+function showCompressing() {
+  document.getElementById('compressingWrap').classList.add('visible');
+}
+function hideCompressing() {
+  document.getElementById('compressingWrap').classList.remove('visible');
+}
+function showProgress() {
+  document.getElementById('progressWrap').classList.add('visible');
+}
+function hideProgress() {
+  document.getElementById('progressWrap').classList.remove('visible');
+}
+function setProgress(pct, phase, pctLabel) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPhase').textContent = phase;
+  document.getElementById('progressPct').textContent = pctLabel;
+}
+function showDone() {
+  document.getElementById('uploadCard').style.display = 'none';
+  document.getElementById('doneCard').classList.add('visible');
+}
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('visible');
+}
+</script>
+</body>
+</html>

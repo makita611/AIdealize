@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>看護記録 SOAP生成</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+  :root {
+    --primary:      #06C755;
+    --primary-dark: #05a847;
+    --accent:       #f0a500;
+    --bg:           #f5f7f6;
+    --surface:      #ffffff;
+    --text:         #1a2620;
+    --text-muted:   #6b7c78;
+    --border:       #d4e0dc;
+    --danger:       #c0392b;
+    --success:      #06C755;
+    --s-color:      #1a6b9a;
+    --o-color:      #2e7d5e;
+    --a-color:      #7b5ea7;
+    --p-color:      #c0601a;
+    --radius:       16px;
+    --shadow:       0 4px 24px rgba(26,107,90,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 48px 0;
+  }
+
+  /* ---- ヘッダー ---- */
+  header {
+    width: 100%;
+    background: var(--primary);
+    padding: 20px 24px 16px;
+    color: white;
+    text-align: center;
+  }
+  header .logo    { font-size: 11px; letter-spacing: 0.15em; opacity: 0.75; margin-bottom: 4px; text-transform: uppercase; }
+  header h1       { font-size: 20px; font-weight: 700; letter-spacing: 0.05em; }
+  header .subtitle{ font-size: 12px; opacity: 0.7; margin-top: 4px; font-weight: 300; }
+
+  .container {
+    width: 100%;
+    max-width: 620px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ---- 注意書き ---- */
+  .notice-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--accent);
+  }
+  .notice-card h2 { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 10px; letter-spacing: 0.05em; }
+  .notice-list    { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .notice-list li {
+    font-size: 12px; line-height: 1.7; color: var(--text-muted);
+    padding-left: 18px; position: relative;
+  }
+  .notice-list li::before {
+    content: '!'; position: absolute; left: 0; top: 1px;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+  }
+
+  /* ---- アップロードカード ---- */
+  .upload-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .upload-card h2 { font-size: 15px; font-weight: 700; color: var(--primary); }
+
+  /* タブ切り替え */
+  .tab-bar {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    background: var(--bg);
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  /* ファイル選択パネル */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+    position: relative;
+  }
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--primary);
+    background: #eaf4f1;
+  }
+  .file-drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .file-drop .icon   { font-size: 36px; margin-bottom: 10px; display: block; }
+  .file-drop .label  { font-size: 14px; font-weight: 500; color: var(--primary); display: block; margin-bottom: 4px; }
+  .file-drop .hint   { font-size: 11px; color: var(--text-muted); }
+  .file-drop.file-selected { background: #eaf4f1; border-color: var(--primary); border-style: solid; }
+
+  /* ファイル情報 */
+  .file-info {
+    display: none; align-items: center; gap: 10px;
+    background: #eaf4f1; border-radius: 10px; padding: 12px 14px; font-size: 13px;
+  }
+  .file-info.visible { display: flex; }
+  .file-info .fname  { font-weight: 500; color: var(--primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-info .fsize  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+  /* 録音パネル */
+  .record-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0 8px;
+  }
+  .record-btn {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(6,199,85,0.35);
+  }
+  .record-btn:hover  { background: var(--primary-dark); }
+  .record-btn:active { transform: scale(0.96); }
+  .record-btn.recording {
+    background: var(--danger);
+    animation: pulse 1.2s infinite;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.35);
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(192,57,43,0.35); }
+    50%       { box-shadow: 0 4px 32px rgba(192,57,43,0.6); }
+  }
+  .record-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  .record-timer { font-size: 28px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; min-height: 36px; }
+  .record-info  { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.7; }
+
+  /* プログレス */
+  .progress-wrap { display: none; flex-direction: column; gap: 8px; }
+  .progress-wrap.visible { display: flex; }
+  .progress-label {
+    font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between;
+  }
+  .progress-bar-bg { background: var(--border); border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  /* 処理中スピナー */
+  .processing-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .processing-wrap.visible { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .processing-text { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+  .processing-elapsed { font-size: 12px; color: var(--text-muted); }
+
+  .status-msg { font-size: 12px; color: var(--text-muted); text-align: center; min-height: 18px; }
+
+  /* ---- 音声圧縮中 ---- */
+  .compressing-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .compressing-wrap.visible { display: flex; }
+  .compress-row { display: flex; align-items: center; gap: 10px; }
+  .compress-spinner {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .compress-text { font-size: 13px; font-weight: 500; color: var(--accent); }
+  .compress-note { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.7; }
+  .compress-badge {
+    display: inline-block;
+    background: #fff8e1;
+    color: #7a5800;
+    border: 1px solid #f0c040;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ボタン */
+  .btn-submit {
+    background: var(--primary);
+    color: white; border: none; border-radius: 12px;
+    padding: 16px; font-size: 16px; font-weight: 700;
+    font-family: inherit; cursor: pointer; width: 100%;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { background: var(--primary); color: white; opacity: 0.35; cursor: not-allowed; }
+  .btn-submit:not(:disabled):hover { background: var(--primary-dark); }
+
+  /* エラー */
+  .error-msg {
+    display: none;
+    background: #fdecea; border-left: 4px solid var(--danger);
+    border-radius: 8px; padding: 12px 14px;
+    font-size: 12px; color: var(--danger); line-height: 1.7;
+  }
+  .error-msg.visible { display: block; }
+
+  /* ---- SOAP結果カード ---- */
+  .result-card {
+    display: none;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: var(--shadow);
+    flex-direction: column;
+    gap: 16px;
+  }
+  .result-card.visible { display: flex; }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .result-header h2 { font-size: 15px; font-weight: 700; color: var(--success); }
+
+  .result-actions { display: flex; gap: 8px; }
+
+  .btn-copy, .btn-reset {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-copy  { background: #eaf4f1; color: var(--primary); }
+  .btn-copy:hover  { background: #d0ece5; }
+  .btn-reset { background: var(--bg); color: var(--text-muted); }
+  .btn-reset:hover { background: var(--border); }
+
+  .result-warning {
+    background: #fff8e1;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: #7a5800;
+    line-height: 1.7;
+  }
+
+  /* SOAPセクション */
+  .soap-sections { display: flex; flex-direction: column; gap: 12px; }
+
+  .soap-section {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .soap-section-header {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.1em;
+  }
+  .soap-section-body {
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.85;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--surface);
+  }
+
+  .soap-s .soap-section-header { background: var(--s-color); }
+  .soap-o .soap-section-header { background: var(--o-color); }
+  .soap-a .soap-section-header { background: var(--a-color); }
+  .soap-p .soap-section-header { background: var(--p-color); }
+
+  /* SOAPがパース不能な場合の生テキスト */
+  .soap-raw {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.85;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: 1px solid var(--border);
+  }
+
+  /* コピー完了トースト */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a2620;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 100;
+  }
+  .toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  footer {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Hanamaru AI / 看護記録</div>
+  <h1>SOAP記録 自動生成</h1>
+  <div class="subtitle">音声を送信するとSOAP形式の看護記録を生成します</div>
+  <div class="subtitle" id="versionBadge" style="opacity:0.55; font-size:10px; margin-top:2px;"></div>
+</header>
+
+<div class="container">
+
+  <!-- 注意書き -->
+  <div class="notice-card">
+    <h2>⚠ ご利用前にお読みください</h2>
+    <ul class="notice-list">
+      <li>AIが出力した内容は必ずご確認・修正してください。最終責任は利用者様にあります。</li>
+      <li>送信後、AIの処理に数十秒〜数分かかります。このページを閉じずにお待ちください。</li>
+      <li>個人情報が含まれる音声の取り扱いにご注意ください。</li>
+      <li>通信環境の良い場所でご使用ください。</li>
+      <li>対応形式：mp3 / m4a / wav / aac（大きいファイルは自動で圧縮します）</li>
+    </ul>
+  </div>
+
+  <!-- 入力カード -->
+  <div class="upload-card" id="uploadCard">
+    <h2>🎙 音声を送信して記録を生成</h2>
+
+    <!-- タブ -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabFile" onclick="switchTab('file')">📂 ファイル選択</button>
+      <button class="tab-btn"        id="tabRec"  onclick="switchTab('rec')">🔴 マイク録音</button>
+    </div>
+
+    <!-- ファイル選択パネル -->
+    <div class="panel active" id="panelFile">
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="fileInput" accept=".mp3,.m4a,.wav,.aac,audio/*">
+        <span class="icon">🎵</span>
+        <span class="label">タップ / ドロップでファイルを選択</span>
+        <span class="hint">mp3 / m4a / wav / aac・大きいファイルは自動圧縮</span>
+      </div>
+    </div>
+
+    <!-- 録音パネル -->
+    <div class="panel" id="panelRec">
+      <div class="record-panel">
+        <div class="record-timer" id="recordTimer">00:00</div>
+        <button class="record-btn" id="recordBtn" onclick="toggleRecord()">🎙</button>
+        <div class="record-label" id="recordLabel">タップして録音開始</div>
+        <div class="record-info">録音を停止すると自動的に送信準備が完了します</div>
+      </div>
+    </div>
+
+    <!-- ファイル情報 -->
+    <div class="file-info" id="fileInfo">
+      <span>🎵</span>
+      <span class="fname" id="fileName">—</span>
+      <span class="fsize" id="fileSize">—</span>
+    </div>
+
+    <!-- 音声圧縮中 -->
+    <div class="compressing-wrap" id="compressingWrap">
+      <div class="compress-row">
+        <div class="compress-spinner"></div>
+        <div class="compress-text">音声を最適化中...</div>
+      </div>
+      <div class="compress-note">モノラル16kHzに変換してファイルサイズを小さくしています<br>このまましばらくお待ちください</div>
+    </div>
+
+    <!-- アップロード進捗 -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressPhase">アップロード中...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- AI処理中 -->
+    <div class="processing-wrap" id="processingWrap">
+      <div class="spinner"></div>
+      <div class="processing-text">AIがSOAPを生成しています...</div>
+      <div class="processing-elapsed" id="elapsedTime"></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="btn-submit" id="submitBtn" disabled>送信してSOAPを生成</button>
+  </div>
+
+  <!-- SOAP結果カード -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <h2>✅ SOAP記録が生成されました</h2>
+      <div class="result-actions">
+        <button class="btn-copy"  onclick="copyResult()">📋 コピー</button>
+        <button class="btn-reset" onclick="resetForm()">↩ もう一度</button>
+      </div>
+    </div>
+    <div class="result-warning">
+      ⚠ AIの出力です。内容を必ずご確認・修正してからご使用ください。最終責任は利用者様にあります。
+    </div>
+    <div class="soap-sections" id="soapSections"></div>
+  </div>
+
+</div>
+
+<footer>
+  Powered by はなまるAI / AIdealize Inc.<br>
+  ご不明点は管理者までお問い合わせください。<br>
+  <span id="footerVersion" style="opacity:0.6;"></span>
+</footer>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+// =============================================
+// バージョン
+// =============================================
+const VERSION = 'v2026.04.09';
+document.getElementById('versionBadge').textContent = VERSION;
+document.getElementById('footerVersion').textContent = VERSION;
+
+// =============================================
+// 設定
+// =============================================
+const UPLOAD_ENDPOINT = './pc_upload.php';
+
+// =============================================
+// タブ切り替え
+// =============================================
+function switchTab(tab) {
+  document.getElementById('panelFile').classList.toggle('active', tab === 'file');
+  document.getElementById('panelRec').classList.toggle('active',  tab === 'rec');
+  document.getElementById('tabFile').classList.toggle('active', tab === 'file');
+  document.getElementById('tabRec').classList.toggle('active',  tab === 'rec');
+  if (tab === 'file') stopRecordingIfActive();
+}
+
+// =============================================
+// ファイル選択
+// =============================================
+const fileInput = document.getElementById('fileInput');
+const fileDrop  = document.getElementById('fileDrop');
+let selectedFile = null;
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+});
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  fileDrop.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  // 500MB超はブラウザのメモリ限界のため不可
+  const hardLimit = 500 * 1024 * 1024;
+  if (file.size > hardLimit) {
+    showError('ファイルサイズが大きすぎます（500MB以上）。録音を分割してお試しください。');
+    return;
+  }
+
+  const allowed = ['audio/mpeg','audio/mp4','audio/m4a','audio/wav','audio/aac','audio/x-m4a','audio/webm','audio/ogg'];
+  const nameOk  = /\.(mp3|m4a|wav|aac|webm|ogg)$/i.test(file.name);
+  if (!allowed.includes(file.type) && !nameOk) {
+    showError('対応していないファイル形式です。mp3 / m4a / wav / aac をお使いください。');
+    return;
+  }
+
+  selectedFile = file;
+  document.getElementById('fileName').textContent = file.name;
+
+  // 3MB超は圧縮マーク付きで表示
+  const sizeStr = formatSize(file.size);
+  document.getElementById('fileSize').textContent =
+    file.size > COMPRESS_THRESHOLD ? sizeStr + ' → 自動圧縮' : sizeStr;
+
+  document.getElementById('fileInfo').classList.add('visible');
+  fileDrop.classList.add('file-selected');
+  document.getElementById('submitBtn').disabled = false;
+  hideError();
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// =============================================
+// 録音
+// =============================================
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordTimerInterval = null;
+let recordSeconds = 0;
+let isRecording = false;
+
+async function toggleRecord() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    recordedChunks = [];
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const ext  = mimeType.includes('webm') ? 'webm' : 'ogg';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      const file = new File([blob], 'recording.' + ext, { type: mimeType });
+      handleFile(file);
+      stream.getTracks().forEach(t => t.stop());
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    recordSeconds = 0;
+    document.getElementById('recordBtn').classList.add('recording');
+    document.getElementById('recordBtn').textContent = '⏹';
+    document.getElementById('recordLabel').textContent = '録音中… タップして停止';
+    recordTimerInterval = setInterval(() => {
+      recordSeconds++;
+      const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+      const s = String(recordSeconds % 60).padStart(2, '0');
+      document.getElementById('recordTimer').textContent = m + ':' + s;
+    }, 1000);
+  } catch (e) {
+    showError('マイクへのアクセスが許可されていません。ブラウザの設定をご確認ください。');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  isRecording = false;
+  clearInterval(recordTimerInterval);
+  document.getElementById('recordBtn').classList.remove('recording');
+  document.getElementById('recordBtn').textContent = '🎙';
+  document.getElementById('recordLabel').textContent = '録音完了 — 送信してください';
+}
+
+function stopRecordingIfActive() {
+  if (isRecording) stopRecording();
+}
+
+// =============================================
+// 音声圧縮（OfflineAudioContext → 16kHz モノラル WAV）
+// =============================================
+const COMPRESS_THRESHOLD = 3 * 1024 * 1024; // 3MB以上は圧縮
+
+async function compressAudio(file) {
+  const arrayBuffer = await file.arrayBuffer();
+
+  // デコード（ブラウザが対応する全形式に対応）
+  const tmpCtx     = new (window.AudioContext || window.webkitAudioContext)();
+  const audioBuffer = await tmpCtx.decodeAudioData(arrayBuffer);
+  await tmpCtx.close();
+
+  // 16kHz モノラルにリサンプル（OfflineAudioContext = リアルタイム不要・高速）
+  const TARGET_RATE = 16000;
+  const numFrames   = Math.ceil(audioBuffer.duration * TARGET_RATE);
+  const offCtx      = new OfflineAudioContext(1, numFrames, TARGET_RATE);
+
+  const src = offCtx.createBufferSource();
+  src.buffer = audioBuffer;
+  src.connect(offCtx.destination);
+  src.start(0);
+
+  const rendered = await offCtx.startRendering(); // ← faster-than-realtime
+
+  // WAV エンコード（16-bit PCM）
+  const wavBlob = encodeWav(rendered);
+  return new File([wavBlob], 'compressed.wav', { type: 'audio/wav' });
+}
+
+function encodeWav(audioBuffer) {
+  const samples    = audioBuffer.getChannelData(0); // モノラル
+  const numSamples = samples.length;
+  const sampleRate = audioBuffer.sampleRate;
+  const byteLen    = numSamples * 2; // 16-bit = 2 bytes/sample
+
+  const buf  = new ArrayBuffer(44 + byteLen);
+  const view = new DataView(buf);
+
+  // RIFF/WAVE ヘッダー
+  wStr(view,  0, 'RIFF');
+  view.setUint32( 4, 36 + byteLen, true);
+  wStr(view,  8, 'WAVE');
+  wStr(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);          // PCM chunk size
+  view.setUint16(20,  1, true);          // format: PCM
+  view.setUint16(22,  1, true);          // channels: 1 (mono)
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate
+  view.setUint16(32,  2, true);          // block align
+  view.setUint16(34, 16, true);          // bits per sample
+  wStr(view, 36, 'data');
+  view.setUint32(40, byteLen, true);
+
+  // PCM サンプル書き込み
+  let offset = 44;
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+function wStr(view, offset, str) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+// =============================================
+// 送信
+// =============================================
+let elapsedInterval = null;
+let elapsedSeconds  = 0;
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  fileInput.disabled = true;
+  hideError();
+
+  // ── 圧縮フェーズ ─────────────────────────────
+  let fileToUpload = selectedFile;
+  if (selectedFile.size > COMPRESS_THRESHOLD) {
+    showCompressing();
+    try {
+      fileToUpload = await compressAudio(selectedFile);
+      // 圧縮後サイズを表示
+      document.getElementById('fileSize').textContent =
+        formatSize(selectedFile.size) + ' → ' + formatSize(fileToUpload.size);
+    } catch (e) {
+      hideCompressing();
+      showError('音声の変換に失敗しました。ファイルが正しい音声ファイルかご確認ください。');
+      resetButtons();
+      return;
+    }
+    hideCompressing();
+  }
+
+  // ── アップロードフェーズ ───────────────────────
+  showProgress();
+
+  const formData = new FormData();
+  formData.append('audio', fileToUpload);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', UPLOAD_ENDPOINT);
+  xhr.timeout = 660000; // 11分
+
+  // アップロード進捗
+  xhr.upload.addEventListener('progress', e => {
+    if (e.lengthComputable) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      setProgress(pct);
+      if (pct === 100) {
+        hideProgress();
+        showProcessing();
+      }
+    }
+  });
+
+  xhr.addEventListener('load', () => {
+    stopElapsedTimer();
+    if (xhr.status === 200) {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (res.success && res.text) {
+          showResult(res.text);
+        } else {
+          hideProcessing();
+          showError('エラー: ' + (res.error || '不明なエラーが発生しました'));
+          resetButtons();
+        }
+      } catch (e) {
+        hideProcessing();
+        showError('レスポンスの解析に失敗しました。');
+        resetButtons();
+      }
+    } else {
+      hideProcessing();
+      let errMsg = '送信に失敗しました（HTTP ' + xhr.status + '）。';
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (res.error) errMsg = 'エラー: ' + res.error;
+      } catch(e) {}
+      showError(errMsg);
+      resetButtons();
+    }
+  });
+
+  xhr.addEventListener('error', () => {
+    stopElapsedTimer();
+    hideProcessing();
+    const dbg = 'status=' + xhr.status + ' readyState=' + xhr.readyState + ' body=' + xhr.responseText.substring(0,200);
+    console.error('XHR error:', dbg);
+    showError('通信エラー（' + dbg + '）');
+    resetButtons();
+  });
+
+  xhr.addEventListener('timeout', () => {
+    stopElapsedTimer();
+    hideProcessing();
+    showError('タイムアウトしました。再度お試しください。');
+    resetButtons();
+  });
+
+  xhr.send(formData);
+});
+
+function resetButtons() {
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('fileInput').disabled = false;
+}
+
+// =============================================
+// SOAP結果表示
+// =============================================
+let resultText = '';
+
+function showResult(text) {
+  resultText = text;
+  hideProcessing();
+  document.getElementById('uploadCard').style.display = 'none';
+
+  const sectionsEl = document.getElementById('soapSections');
+  sectionsEl.innerHTML = '';
+
+  const parsed = parseSoap(text);
+  if (parsed) {
+    const labels = {
+      S: { label: 'S — 主観的情報 (Subjective)',  cls: 'soap-s' },
+      O: { label: 'O — 客観的情報 (Objective)',   cls: 'soap-o' },
+      A: { label: 'A — アセスメント (Assessment)', cls: 'soap-a' },
+      P: { label: 'P — 計画 (Plan)',               cls: 'soap-p' },
+    };
+    ['S','O','A','P'].forEach(key => {
+      if (!parsed[key]) return;
+      const info = labels[key];
+      const sec  = document.createElement('div');
+      sec.className = 'soap-section ' + info.cls;
+      sec.innerHTML = `<div class="soap-section-header">${info.label}</div><div class="soap-section-body">${escHtml(parsed[key].trim())}</div>`;
+      sectionsEl.appendChild(sec);
+    });
+  } else {
+    const raw = document.createElement('div');
+    raw.className = 'soap-raw';
+    raw.textContent = text;
+    sectionsEl.appendChild(raw);
+  }
+
+  document.getElementById('resultCard').classList.add('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function parseSoap(text) {
+  // 【S】【O】【A】【P】 or [S][O][A][P] or S: O: A: P: 形式を検出
+  const patterns = [
+    /【([SOAP])】/g,
+    /\[([SOAP])\]/g,
+    /^([SOAP])[：:]/gm,
+  ];
+
+  for (const pattern of patterns) {
+    const matches = [...text.matchAll(pattern)];
+    if (matches.length >= 2) {
+      const result = {};
+      for (let i = 0; i < matches.length; i++) {
+        const key   = matches[i][1];
+        const start = matches[i].index + matches[i][0].length;
+        const end   = i + 1 < matches.length ? matches[i+1].index : text.length;
+        result[key] = text.slice(start, end).replace(/^[\n\r]+/, '');
+      }
+      return result;
+    }
+  }
+  return null;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// =============================================
+// コピー
+// =============================================
+function copyResult() {
+  navigator.clipboard.writeText(resultText).then(() => {
+    const toast = document.getElementById('toast');
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2000);
+  });
+}
+
+// =============================================
+// リセット
+// =============================================
+function resetForm() {
+  selectedFile = null;
+  resultText   = '';
+  document.getElementById('resultCard').classList.remove('visible');
+  document.getElementById('uploadCard').style.display = '';
+  document.getElementById('fileInfo').classList.remove('visible');
+  document.getElementById('fileDrop').classList.remove('file-selected');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileName').textContent = '—';
+  document.getElementById('fileSize').textContent = '—';
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('recordTimer').textContent = '00:00';
+  document.getElementById('recordLabel').textContent = 'タップして録音開始';
+  hideError();
+  hideProgress();
+  hideProcessing();
+  hideCompressing();
+}
+
+// =============================================
+// UI helpers
+// =============================================
+function showProgress() {
+  document.getElementById('progressWrap').classList.add('visible');
+  document.getElementById('submitBtn').disabled = true;
+}
+function hideProgress() {
+  document.getElementById('progressWrap').classList.remove('visible');
+}
+function setProgress(pct) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+function showProcessing() {
+  document.getElementById('processingWrap').classList.add('visible');
+  document.getElementById('submitBtn').disabled = true;
+  elapsedSeconds = 0;
+  elapsedInterval = setInterval(() => {
+    elapsedSeconds++;
+    document.getElementById('elapsedTime').textContent = '経過時間: ' + elapsedSeconds + '秒';
+  }, 1000);
+}
+function hideProcessing() {
+  document.getElementById('processingWrap').classList.remove('visible');
+}
+function showCompressing() {
+  document.getElementById('compressingWrap').classList.add('visible');
+  document.getElementById('submitBtn').disabled = true;
+}
+function hideCompressing() {
+  document.getElementById('compressingWrap').classList.remove('visible');
+}
+function stopElapsedTimer() {
+  clearInterval(elapsedInterval);
+}
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('visible');
+}
+</script>
+</body>
+</html>
