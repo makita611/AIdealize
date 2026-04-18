@@ -1589,7 +1589,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <form id="downloadForm" class="lp-form" novalidate>
           <div class="lp-form-group">
             <label class="lp-form-label" for="dl_office">事業所名</label>
-            <input type="text" id="dl_office" name="office" placeholder="例：〇〇訪問看護ステーション">
+            <input type="text" id="dl_office" name="facility_name" placeholder="例：〇〇訪問看護ステーション">
           </div>
           <div class="lp-form-group">
             <label class="lp-form-label" for="dl_email">メールアドレス<span class="req">必須</span></label>
@@ -1647,21 +1647,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <div class="lp-form-group">
             <label class="lp-form-label" for="ct_tel">電話番号</label>
-            <input type="tel" id="ct_tel" name="tel" placeholder="例：090-0000-0000">
+            <input type="tel" id="ct_tel" name="phone" placeholder="例：090-0000-0000">
           </div>
           <div class="lp-form-group">
             <label class="lp-form-label">ご希望</label>
             <div class="lp-form-radios">
               <label class="lp-form-radio">
-                <input type="radio" name="request" value="無料デモを見たい" checked>
+                <input type="radio" name="request_type" value="無料デモを見たい" checked>
                 無料デモを見たい
               </label>
               <label class="lp-form-radio">
-                <input type="radio" name="request" value="料金を聞きたい">
+                <input type="radio" name="request_type" value="料金を聞きたい">
                 料金を聞きたい
               </label>
               <label class="lp-form-radio">
-                <input type="radio" name="request" value="導入について相談したい">
+                <input type="radio" name="request_type" value="導入について相談したい">
                 導入について相談したい
               </label>
             </div>
@@ -1776,29 +1776,45 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function setupForm(formId, thanksId, formName) {
     var form = document.getElementById(formId);
-    var thanks = document.getElementById(thanksId);
     if (!form) return;
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       var btn = form.querySelector('.lp-form-submit');
-      var data = {};
-      new FormData(form).forEach(function(v, k) { data[k] = v; });
-      data.form_name = formName;
+      var originalText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '送信中...';
+
+      var formData = new FormData();
+      formData.append('form_name', formName);
+
+      var inputs = form.querySelectorAll('input, select, textarea');
+      inputs.forEach(function(input) {
+        if (input.name && input.value) {
+          if (input.type === 'radio') {
+            if (input.checked) formData.append(input.name, input.value);
+          } else {
+            formData.append(input.name, input.value);
+          }
+        }
+      });
+
       fetch(GAS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        mode: 'no-cors',
+        body: formData
       }).then(function() {
-        form.style.display = 'none';
-        thanks.style.display = 'block';
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'form_submit', form_name: formName });
-      }).catch(function() {
+        // no-corsはレスポンスが読めないので、常に成功扱い
+        document.getElementById(formId).style.display = 'none';
+        document.getElementById(thanksId).style.display = 'block';
+        if (window.dataLayer) {
+          dataLayer.push({ event: 'form_submit', form_name: formName });
+        }
+      }).catch(function(err) {
+        alert('送信に失敗しました。もう一度お試しください。');
+        console.error(err);
+      }).finally(function() {
         btn.disabled = false;
-        btn.textContent = btn.dataset.label || '送信する';
-        alert('送信に失敗しました。しばらくしてから再度お試しください。');
+        btn.textContent = originalText;
       });
     });
   }
