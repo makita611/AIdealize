@@ -800,20 +800,69 @@ body {
 .float-cta {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 900;
-  background: var(--white); color: var(--ink);
-  text-align: center; padding: 14px 16px;
-  font-size: 0.97rem; font-weight: 700; text-decoration: none;
-  box-shadow: 0 -3px 16px rgba(0,0,0,0.12);
-  letter-spacing: 0.04em;
+  background: rgba(0,0,0,0.88);
+  padding: 12px 16px;
+  text-decoration: none;
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.25);
   opacity: 0; pointer-events: none;
   transition: opacity 0.3s;
 }
-.float-cta.visible {
-  opacity: 1; pointer-events: auto;
+.float-cta.visible { opacity: 1; pointer-events: auto; }
+.float-cta-btn {
+  display: block;
+  background: #22c55e;
+  color: #fff;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 4px;
+  font-size: 0.97rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 @media (max-width: 768px) {
   .float-cta { display: block; }
   .contact { padding-bottom: 100px; }
+}
+
+/* ====== FORMS ====== */
+.lp-form { width: 100%; }
+.lp-form-group { margin-bottom: 16px; }
+.lp-form-label {
+  display: block; font-size: 0.85rem; font-weight: 700;
+  color: var(--ink); margin-bottom: 6px;
+}
+.lp-form-label .req {
+  display: inline-block; background: var(--nursing); color: #fff;
+  font-size: 0.7rem; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: middle;
+}
+.lp-form input[type="text"],
+.lp-form input[type="email"],
+.lp-form input[type="tel"] {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 6px; font-size: 0.95rem; font-family: inherit;
+  background: var(--white); color: var(--ink);
+  transition: border-color 0.2s;
+  outline: none;
+}
+.lp-form input:focus { border-color: var(--nursing); }
+.lp-form-radios { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.lp-form-radio {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.92rem; cursor: pointer;
+}
+.lp-form-radio input[type="radio"] { accent-color: var(--nursing); width: 16px; height: 16px; }
+.lp-form-submit {
+  width: 100%; padding: 15px; border: none; border-radius: 6px;
+  background: var(--line); color: #fff;
+  font-size: 1rem; font-weight: 700; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.04em;
+  transition: background 0.2s, transform 0.1s;
+}
+.lp-form-submit:hover:not(:disabled) { background: var(--line-dark); transform: translateY(-1px); }
+.lp-form-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.lp-form-thanks {
+  display: none; text-align: center; padding: 24px 16px;
+  font-size: 0.95rem; color: var(--nursing-dark); font-weight: 700; line-height: 1.8;
 }
 </style>
 </head>
@@ -1537,7 +1586,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <div class="download-form-wrap">
-        [contact-form-7 id="94a629d" title="はなまる看護ダウンロード"]
+        <form id="downloadForm" class="lp-form" novalidate>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="dl_office">事業所名</label>
+            <input type="text" id="dl_office" name="office" placeholder="例：〇〇訪問看護ステーション">
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="dl_email">メールアドレス<span class="req">必須</span></label>
+            <input type="email" id="dl_email" name="email" placeholder="例：info@example.com" required>
+          </div>
+          <button type="submit" class="lp-form-submit">📥 無料で資料をダウンロードする</button>
+        </form>
+        <div id="downloadThanks" class="lp-form-thanks">
+          送信しました。メールをご確認ください。
+        </div>
       </div>
       <p class="download-note">
         ※ 送信後、すぐにダウンロードページに移動します。<br>
@@ -1570,7 +1632,45 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="contact-perk">✅ スマホ・PC両対応</span>
       </div>
       <div class="form-embed">
-        [contact-form-7 id="00e33f2" title="はなまる看護申込フォーム"]
+        <form id="contactForm" class="lp-form" novalidate>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="ct_name">お名前<span class="req">必須</span></label>
+            <input type="text" id="ct_name" name="name" placeholder="例：山田 花子" required>
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="ct_company">会社名 / 施設名</label>
+            <input type="text" id="ct_company" name="company" placeholder="例：〇〇訪問看護ステーション">
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="ct_email">メールアドレス<span class="req">必須</span></label>
+            <input type="email" id="ct_email" name="email" placeholder="例：info@example.com" required>
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label" for="ct_tel">電話番号</label>
+            <input type="tel" id="ct_tel" name="tel" placeholder="例：090-0000-0000">
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label">ご希望</label>
+            <div class="lp-form-radios">
+              <label class="lp-form-radio">
+                <input type="radio" name="request" value="無料デモを見たい" checked>
+                無料デモを見たい
+              </label>
+              <label class="lp-form-radio">
+                <input type="radio" name="request" value="料金を聞きたい">
+                料金を聞きたい
+              </label>
+              <label class="lp-form-radio">
+                <input type="radio" name="request" value="導入について相談したい">
+                導入について相談したい
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="lp-form-submit">🎁 1ヶ月無料トライアルに申し込む</button>
+        </form>
+        <div id="contactThanks" class="lp-form-thanks">
+          お問い合わせありがとうございます。2営業日以内にご連絡いたします。
+        </div>
       </div>
       <p class="contact-note">
         ※ オンライン対応（Zoom / Google Meet / LINE）<br>
@@ -1607,7 +1707,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </footer>
 
 <!-- FLOATING CTA (SP) -->
-<a href="#contact" class="float-cta">🎁 1ヶ月無料トライアルに申し込む</a>
+<a href="#contact" class="float-cta"><span class="float-cta-btn">🎁 1ヶ月無料トライアルに申し込む</span></a>
 
 <script>
 (function(){
@@ -1670,6 +1770,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   reveals.forEach(function(el){ observer.observe(el); });
 })();
 
+
+  // GAS フォーム送信
+  var GAS_URL = 'https://script.google.com/macros/s/PLACEHOLDER/exec';
+
+  function setupForm(formId, thanksId, formName) {
+    var form = document.getElementById(formId);
+    var thanks = document.getElementById(thanksId);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = form.querySelector('.lp-form-submit');
+      var data = {};
+      new FormData(form).forEach(function(v, k) { data[k] = v; });
+      data.form_name = formName;
+      btn.disabled = true;
+      btn.textContent = '送信中...';
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(function() {
+        form.style.display = 'none';
+        thanks.style.display = 'block';
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: 'form_submit', form_name: formName });
+      }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.label || '送信する';
+        alert('送信に失敗しました。しばらくしてから再度お試しください。');
+      });
+    });
+  }
+
+  setupForm('downloadForm', 'downloadThanks', 'hanamaru_kango_download');
+  setupForm('contactForm', 'contactThanks', 'hanamaru_kango_contact');
 
   // iframeをコンテンツの高さに自動リサイズ
   var demoIframe = document.querySelector('.demo-embed');
