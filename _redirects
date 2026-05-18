@@ -1,0 +1,14 @@
+# jinzai（削除済み） → service
+/service/jinzai/    /service/    301
+/service/jinzai     /service/    301
+
+# news → トップ
+/news/              /            301
+/news               /            301
+
+# bousai → トップ（後でservice配下に統合予定）
+# /bousai/         /service/    301
+
+# 旧WordPressパス対応
+/wp-admin/          /            301
+/wp-login.php       /            301
