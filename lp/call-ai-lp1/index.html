@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コールAI | 電話対応を自動化するAIソリューション | AIdealize</title>
+<meta name="description" content="AIによる電話対応自動化。よくある問い合わせへの自動応答・予約受付・情報案内をAIが24時間対応。人手不足を解消し、スタッフの本来業務に集中できる環境をつくります。">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--red:#c0272d;--red-dark:#a01f24;--teal:#0891b2;--teal-dark:#0e7490;--teal-lt:#E0F7FA;--ink:#1a1a1a;--mid:#555;--white:#fff;--border:#e8e8e8;--bg:#f7f7f5;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--white);color:var(--ink);line-height:1.75;overflow-x:hidden}
+
+#mainNav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 60px;height:68px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);transition:box-shadow .3s}
+#mainNav.scrolled{box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-logo-text{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.nav-logo-text span{color:var(--red)}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:var(--mid);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{background:var(--red);color:var(--white)!important;padding:10px 22px;border-radius:3px;font-size:12px!important;font-weight:700!important;transition:background .2s!important}
+.nav-cta:hover{background:var(--red-dark)!important}
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;background:none;border:none;cursor:pointer;padding:4px}
+.nav-hamburger span{display:block;width:24px;height:2px;background:var(--ink);transition:all .3s;transform-origin:center}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.nav-drawer{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(255,255,255,.98);border-bottom:2px solid var(--red);padding:24px 32px 32px;z-index:999}
+.nav-drawer.open{display:block}
+.nav-drawer ul{list-style:none;display:flex;flex-direction:column;gap:0}
+.nav-drawer ul li a{display:block;padding:14px 0;font-size:15px;font-weight:500;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--border)}
+.nav-drawer ul li:last-child a{margin-top:20px;text-align:center;background:var(--red);color:var(--white)!important;padding:14px 22px;border-radius:3px;font-weight:700!important;border-bottom:none}
+@media(max-width:1024px){#mainNav{padding:0 32px}.nav-links{display:none}.nav-hamburger{display:flex}}
+@media(max-width:480px){#mainNav{padding:0 20px;height:60px}.nav-drawer{top:60px}}
+
+.hero{padding:130px 60px 80px;max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:60px}
+.hero-text{flex:1}
+.hero-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--teal);border:1px solid var(--teal);padding:4px 14px;border-radius:2px;margin-bottom:20px}
+.hero h1{font-size:clamp(26px,4vw,46px);font-weight:900;line-height:1.3;margin-bottom:16px}
+.hero h1 em{font-style:normal;color:var(--teal)}
+.hero p{font-size:15px;color:var(--mid);max-width:560px;line-height:1.9;margin-bottom:32px}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap}
+.btn-primary{padding:15px 36px;background:var(--teal);color:var(--white);border-radius:3px;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{padding:13px 30px;border:1.5px solid var(--teal);color:var(--teal);border-radius:3px;font-size:14px;font-weight:700;text-decoration:none}
+.hero-stat{flex:1;max-width:380px}
+.stat-box{background:var(--teal-lt);border-radius:12px;padding:32px;text-align:center}
+.stat-num{font-size:3.5rem;font-weight:900;color:var(--teal);line-height:1}
+.stat-label{font-size:13px;color:var(--mid);margin-top:8px}
+
+.section{padding:64px 60px;max-width:1100px;margin:0 auto}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--teal);margin-bottom:10px}
+.sec-title{font-size:clamp(20px,2.5vw,28px);font-weight:900;margin-bottom:36px}
+
+.flow{display:flex;gap:0;align-items:stretch;background:var(--bg);border-radius:8px;overflow:hidden;margin-bottom:40px}
+.flow-step{flex:1;padding:24px 16px;text-align:center;border-right:1px solid var(--border)}
+.flow-step:last-child{border-right:none}
+.flow-icon{font-size:2rem;margin-bottom:10px}
+.flow-name{font-weight:700;font-size:13px;margin-bottom:4px}
+.flow-sub{font-size:11px;color:var(--mid);line-height:1.6}
+.flow-arrow{display:flex;align-items:center;padding:0 6px;color:var(--teal);font-size:18px;flex-shrink:0}
+
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-bottom:40px}
+.pain-card{background:var(--bg);border-left:3px solid var(--teal);border-radius:0 6px 6px 0;padding:20px 24px}
+.pain-card h4{font-size:13px;font-weight:900;margin-bottom:8px}
+.pain-card p{font-size:12px;color:var(--mid);line-height:1.8}
+
+.cta-block{background:var(--teal);color:var(--white);text-align:center;padding:64px 40px;margin-top:80px}
+.cta-block h2{font-size:clamp(22px,3vw,32px);font-weight:900;margin-bottom:12px}
+.cta-block p{color:rgba(255,255,255,.7);margin-bottom:28px;font-size:14px}
+.cta-block .btn-white{background:var(--white);color:var(--teal);padding:15px 40px;border-radius:3px;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.cta-block .btn-white:hover{opacity:.88}
+
+footer{padding:24px 60px;border-top:1px solid var(--border);text-align:center;color:var(--mid);font-size:12px}
+footer a{color:inherit}
+@media(max-width:768px){.hero{flex-direction:column;padding:100px 24px 60px}.hero-stat{max-width:100%;width:100%}.section{padding-left:24px;padding-right:24px}.flow{flex-direction:column}.flow-arrow{display:none}}
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a href="/" class="nav-logo">
+    <span class="nav-logo-text"><span>AI</span>dealize</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/service/">サービス</a></li>
+    <li><a href="/company/">会社概要</a></li>
+    <li><a href="/lp/ai-lp1/" class="nav-cta">無料診断を受ける</a></li>
+  </ul>
+  <button class="nav-hamburger" id="navHamburger" aria-label="メニュー"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-drawer" id="navDrawer">
+  <ul>
+    <li><a href="/service/" class="drawer-link">サービス</a></li>
+    <li><a href="/company/" class="drawer-link">会社概要</a></li>
+    <li><a href="/lp/ai-lp1/">無料診断を受ける</a></li>
+  </ul>
+</div>
+
+<div class="hero">
+  <div class="hero-text">
+    <div class="hero-tag">CALL AI — 電話対応自動化</div>
+    <h1>電話が来るたびに、<br><em>業務が止まっていませんか？</em></h1>
+    <p>よくある問い合わせへの自動応答・予約受付・情報案内をAIが24時間365日対応。スタッフの対応時間を最大70%削減し、本来の仕事に集中できる環境をつくります。</p>
+    <div class="hero-btns">
+      <a href="/lp/ai-lp1/" class="btn-primary">無料相談をする</a>
+      <a href="/service/" class="btn-ghost">サービス一覧へ</a>
+    </div>
+  </div>
+  <div class="hero-stat">
+    <div class="stat-box">
+      <div class="stat-num">70<span style="font-size:1.5rem">%</span></div>
+      <div class="stat-label">電話対応時間の削減（目安）</div>
+      <div style="margin-top:20px;font-size:2rem;font-weight:900;color:var(--teal);line-height:1">24h</div>
+      <div class="stat-label">AIが365日対応</div>
+    </div>
+  </div>
+</div>
+
+<div style="background:var(--bg);padding:1px 0">
+<div class="section">
+  <div class="sec-label">HOW IT WORKS</div>
+  <div class="sec-title">導入から稼働まで、最短1週間</div>
+  <div class="flow">
+    <div class="flow-step"><div class="flow-icon">📋</div><div class="flow-name">ヒアリング</div><div class="flow-sub">よくある質問・対応フローを整理</div></div>
+    <div class="flow-arrow">›</div>
+    <div class="flow-step"><div class="flow-icon">🤖</div><div class="flow-name">AI設定</div><div class="flow-sub">応答シナリオをAIに学習させる</div></div>
+    <div class="flow-arrow">›</div>
+    <div class="flow-step"><div class="flow-icon">📞</div><div class="flow-name">テスト稼働</div><div class="flow-sub">実際の電話で精度確認・調整</div></div>
+    <div class="flow-arrow">›</div>
+    <div class="flow-step"><div class="flow-icon">✅</div><div class="flow-name">本稼働</div><div class="flow-sub">24時間自動対応スタート</div></div>
+  </div>
+</div>
+</div>
+
+<div class="section">
+  <div class="sec-label">PAIN POINTS</div>
+  <div class="sec-title">こんな課題を解決します</div>
+  <div class="pain-grid">
+    <div class="pain-card"><h4>📵 受電できずに機会損失</h4><p>診察時間中・外出中の着信を取れず、患者・顧客を逃していませんか？AIが24時間一次対応します。</p></div>
+    <div class="pain-card"><h4>🔁 同じ質問の繰り返し</h4><p>「営業時間は？」「場所は？」などの定型問い合わせにスタッフが繰り返し対応。AIが即答します。</p></div>
+    <div class="pain-card"><h4>😓 スタッフの対応負荷</h4><p>少人数のスタッフが電話対応に追われ、本来の業務に集中できない。AIが一次対応を肩代わりします。</p></div>
+  </div>
+</div>
+
+<div class="cta-block">
+  <h2>まずは30分、話してみてください</h2>
+  <p>どの業務から自動化すべきか、無料相談でお気軽にご確認ください。</p>
+  <a href="/lp/ai-lp1/" class="btn-white">無料相談をする</a>
+</div>
+
+<footer>© 2026 AIdealize株式会社　|　<a href="/">TOP</a>　|　<a href="/service/">サービス</a>　|　<a href="/company/">会社概要</a></footer>
+
+<script>
+(function(){
+  const btn=document.getElementById('navHamburger'),drawer=document.getElementById('navDrawer'),nav=document.getElementById('mainNav');
+  btn.addEventListener('click',function(){btn.classList.toggle('open');drawer.classList.toggle('open')});
+  drawer.querySelectorAll('.drawer-link').forEach(function(l){l.addEventListener('click',function(){btn.classList.remove('open');drawer.classList.remove('open')})});
+  window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>10)});
+})();
+</script>
+</body>
+</html>

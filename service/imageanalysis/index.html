@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI画像解析エンジン | ミリ単位の計測・比較・検査 | AIdealize</title>
+<meta name="description" content="MediaPipe・OpenCV搭載のAI画像解析エンジン。顔面バランス解析から製造ライン検査・スポーツフォーム分析まで。0.1mm精度でAPI提供・OEM対応。">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--red:#c0272d;--red-dark:#a01f24;--blue:#1565C0;--blue-lt:#E3F0FC;--ink:#1a1a1a;--mid:#555;--white:#fff;--border:#e8e8e8;--bg:#f7f7f5;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--white);color:var(--ink);line-height:1.75;overflow-x:hidden}
+
+#mainNav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 60px;height:68px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);transition:box-shadow .3s}
+#mainNav.scrolled{box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-logo-text{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.nav-logo-text span{color:var(--red)}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;color:var(--mid);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{background:var(--red);color:var(--white)!important;padding:10px 22px;border-radius:3px;font-size:12px!important;font-weight:700!important;transition:background .2s!important}
+.nav-cta:hover{background:var(--red-dark)!important}
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;background:none;border:none;cursor:pointer;padding:4px}
+.nav-hamburger span{display:block;width:24px;height:2px;background:var(--ink);transition:all .3s;transform-origin:center}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.nav-drawer{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(255,255,255,.98);border-bottom:2px solid var(--red);padding:24px 32px 32px;z-index:999}
+.nav-drawer.open{display:block}
+.nav-drawer ul{list-style:none;display:flex;flex-direction:column;gap:0}
+.nav-drawer ul li a{display:block;padding:14px 0;font-size:15px;font-weight:500;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--border)}
+.nav-drawer ul li:last-child a{margin-top:20px;text-align:center;background:var(--red);color:var(--white)!important;padding:14px 22px;border-radius:3px;font-weight:700!important;border-bottom:none}
+@media(max-width:1024px){#mainNav{padding:0 32px}.nav-links{display:none}.nav-hamburger{display:flex}}
+@media(max-width:480px){#mainNav{padding:0 20px;height:60px}.nav-drawer{top:60px}}
+
+.hero{padding:130px 60px 80px;max-width:1100px;margin:0 auto}
+.hero-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--blue);border:1px solid var(--blue);padding:4px 14px;border-radius:2px;margin-bottom:20px}
+.hero h1{font-size:clamp(26px,4vw,48px);font-weight:900;line-height:1.3;margin-bottom:16px}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero p{font-size:15px;color:var(--mid);max-width:600px;line-height:1.9;margin-bottom:32px}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap}
+.btn-primary{padding:15px 36px;background:var(--blue);color:var(--white);border-radius:3px;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{padding:13px 30px;border:1.5px solid var(--blue);color:var(--blue);border-radius:3px;font-size:14px;font-weight:700;text-decoration:none;transition:background .2s}
+.btn-ghost:hover{background:var(--blue-lt)}
+
+.section{padding:64px 60px;max-width:1100px;margin:0 auto}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--blue);margin-bottom:10px}
+.sec-title{font-size:clamp(20px,2.5vw,28px);font-weight:900;margin-bottom:36px}
+.bg-gray{background:var(--bg)}
+
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:32px}
+.feat-card{background:var(--white);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:6px;padding:24px}
+.feat-num{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.1em;margin-bottom:8px}
+.feat-card h4{font-size:14px;font-weight:900;margin-bottom:8px}
+.feat-card p{font-size:12px;color:var(--mid);line-height:1.8}
+
+.usecase-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.usecase-card{background:var(--bg);border-radius:6px;padding:24px}
+.usecase-industry{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--blue);margin-bottom:8px}
+.usecase-card h4{font-size:14px;font-weight:900;margin-bottom:8px}
+.usecase-card p{font-size:12px;color:var(--mid);line-height:1.8}
+
+.cta-block{background:var(--blue);color:var(--white);text-align:center;padding:64px 40px;margin-top:80px}
+.cta-block h2{font-size:clamp(22px,3vw,32px);font-weight:900;margin-bottom:12px}
+.cta-block p{color:rgba(255,255,255,.7);margin-bottom:28px;font-size:14px}
+.cta-block .btn-white{background:var(--white);color:var(--blue);padding:15px 40px;border-radius:3px;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.cta-block .btn-white:hover{opacity:.88}
+
+footer{padding:24px 60px;border-top:1px solid var(--border);text-align:center;color:var(--mid);font-size:12px}
+footer a{color:inherit}
+@media(max-width:768px){.hero,.section{padding-left:24px;padding-right:24px}}
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a href="/" class="nav-logo">
+    <span class="nav-logo-text"><span>AI</span>dealize</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/service/">サービス</a></li>
+    <li><a href="/company/">会社概要</a></li>
+    <li><a href="/lp/ai-lp1/" class="nav-cta">無料診断を受ける</a></li>
+  </ul>
+  <button class="nav-hamburger" id="navHamburger" aria-label="メニュー"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-drawer" id="navDrawer">
+  <ul>
+    <li><a href="/service/" class="drawer-link">サービス</a></li>
+    <li><a href="/company/" class="drawer-link">会社概要</a></li>
+    <li><a href="/lp/ai-lp1/">無料診断を受ける</a></li>
+  </ul>
+</div>
+
+<div class="hero">
+  <div class="hero-tag">AI IMAGE ANALYSIS ENGINE</div>
+  <h1>「見る」を、<br><em>ミリ単位のデータに変える。</em></h1>
+  <p>MediaPipe・OpenCVを核としたAI画像解析エンジン。顔面バランス解析から製造ラインの検品、スポーツフォーム分析まで——あらゆる「目視」をデータ化します。API提供・OEM対応可。</p>
+  <div class="hero-btns">
+    <a href="/lp/ai-lp1/" class="btn-primary">デモ・お問い合わせ</a>
+    <a href="/service/" class="btn-ghost">サービス一覧へ</a>
+  </div>
+</div>
+
+<div style="background:var(--bg);padding:1px 0">
+<div class="section">
+  <div class="sec-label">CORE FEATURES</div>
+  <div class="sec-title">エンジンのコア機能</div>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-num">01 — DETECTION</div><h4>MediaPipe 468点検出</h4><p>Googleの顔面ランドマークモデルで468点を高精度検出。リアルタイム処理対応、プライバシー保護のローカル処理。</p></div>
+    <div class="feat-card"><div class="feat-num">02 — CALIBRATION</div><h4>実寸換算・キャリブレーション</h4><p>虹彩径や既知基準点からpx→mm変換。環境やカメラが違っても絶対計測を実現。</p></div>
+    <div class="feat-card"><div class="feat-num">03 — CORRECTION</div><h4>3軸傾き補正</h4><p>瞳孔・骨格・中顔面の3モードで撮影傾きを自動補正。フェーズ間比較の精度を担保。</p></div>
+    <div class="feat-card"><div class="feat-num">04 — SCORING</div><h4>スコアリング・レポート出力</h4><p>7指標を重み付きスコアに統合し100点満点で可視化。PDF診断書を1クリック出力。</p></div>
+  </div>
+</div>
+</div>
+
+<div id="usecases" class="section">
+  <div class="sec-label">USE CASES</div>
+  <div class="sec-title">業界別の活用シーン</div>
+  <div class="usecase-grid">
+    <div class="usecase-card"><div class="usecase-industry">MEDICAL AESTHETICS</div><h4>アートメイク・美容クリニック</h4><p>眉・アイライン・リップの左右差をAIが数値化。術前後の変化をエビデンスとして提示し成約率向上。</p></div>
+    <div class="usecase-card"><div class="usecase-industry">MANUFACTURING</div><h4>製造・品質管理</h4><p>部品の寸法・キズ・位置ずれをカメラ1台で自動検出。目視検査の属人化を解消し品質を標準化。</p></div>
+    <div class="usecase-card"><div class="usecase-industry">SPORTS / REHAB</div><h4>スポーツ・リハビリ</h4><p>骨格・関節の左右バランスをフレーム単位で計測。フォーム改善や理学療法の進捗を数値化。</p></div>
+    <div class="usecase-card"><div class="usecase-industry">DERMATOLOGY</div><h4>皮膚科・スキンケア</h4><p>肌状態の経時変化を定量比較。治療前後の効果を数値と画像で記録し説明力を高める。</p></div>
+  </div>
+</div>
+
+<div class="cta-block">
+  <h2>まずはデモをご覧ください</h2>
+  <p>業種・課題に合わせたカスタムデモをご用意します。API連携・OEM・共同開発もお気軽にご相談ください。</p>
+  <a href="/lp/ai-lp1/" class="btn-white">デモ・お問い合わせ</a>
+</div>
+
+<footer>© 2026 AIdealize株式会社　|　<a href="/">TOP</a>　|　<a href="/service/">サービス</a>　|　<a href="/company/">会社概要</a></footer>
+
+<script>
+(function(){
+  const btn=document.getElementById('navHamburger'),drawer=document.getElementById('navDrawer'),nav=document.getElementById('mainNav');
+  btn.addEventListener('click',function(){btn.classList.toggle('open');drawer.classList.toggle('open')});
+  drawer.querySelectorAll('.drawer-link').forEach(function(l){l.addEventListener('click',function(){btn.classList.remove('open');drawer.classList.remove('open')})});
+  window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>10)});
+})();
+</script>
+</body>
+</html>
