@@ -1855,8 +1855,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   setupForm('downloadForm', 'downloadThanks', 'hanamaru_kango_download');
   setupForm('contactForm', 'contactThanks', 'hanamaru_kango_contact');
 
-  // iframeをコンテンツの高さに自動リサイズ
+  // iframeをコンテンツの高さに自動リサイズ + GA4計測
   var demoIframe = document.querySelector('.demo-embed');
+  var soapTracked = false;
   if (demoIframe) {
     demoIframe.addEventListener('load', function () {
       try {
@@ -1864,8 +1865,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         this.style.height = h + 'px';
       } catch (e) { }
     });
-  }
 
+    // iframe内からのSOAP生成完了イベント受信
+    window.addEventListener('message', function(e) {
+      if (e.origin !== 'https://aidealize.com' && e.origin !== window.location.origin) return;
+
+      if (e.data && e.data.type === 'soap_generated' && !soapTracked) {
+        soapTracked = true;
+        if (window.gtag) {
+          gtag('event', 'generate_soap_note', {
+            'event_category': 'soap_funnel',
+            'event_label': 'iframe_demo',
+            'value': 1
+          });
+        }
+      }
+    });
+  }
 
 </script>
 
