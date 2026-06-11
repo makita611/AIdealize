@@ -986,7 +986,7 @@ function showProcessing() {
       messageIndex++;
       document.getElementById('processingText').textContent = messages[messageIndex];
     }
-    document.getElementById('processingPhase').textContent = '(' + elapsedSeconds + '秒経過)';
+    // 経過時間表示を削除
   }, 1000);
 }
 function hideProcessing() {

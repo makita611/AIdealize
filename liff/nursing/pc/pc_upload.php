@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 ini_set('display_errors', 0);
-set_time_limit(660);
+set_time_limit(600); // 10分（Dify処理3-5分 + 余裕）
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode(['ok' => true, 'msg' => 'pc_upload.php is reachable']);
