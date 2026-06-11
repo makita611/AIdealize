@@ -840,6 +840,14 @@ function showResult(text) {
   hideProcessing();
   document.getElementById('uploadCard').style.display = 'none';
 
+  // GA4計測: 親フレーム（LP）にSOAP生成完了を通知
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'soap_generated',
+      timestamp: new Date().toISOString()
+    }, '*');
+  }
+
   const sectionsEl = document.getElementById('soapSections');
   sectionsEl.innerHTML = '';
 
