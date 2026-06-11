@@ -479,8 +479,8 @@
     <!-- AI処理中 -->
     <div class="processing-wrap" id="processingWrap">
       <div class="spinner"></div>
-      <div class="processing-text">AIがSOAPを生成しています...</div>
-      <div class="processing-elapsed" id="elapsedTime"></div>
+      <div class="processing-text" id="processingText">音声を分析中です...</div>
+      <div class="processing-elapsed" id="processingPhase"></div>
     </div>
 
     <div class="error-msg" id="errorMsg"></div>
@@ -635,7 +635,13 @@ async function startRecording() {
       document.getElementById('recordTimer').textContent = m + ':' + s;
     }, 1000);
   } catch (e) {
-    showError('マイクへのアクセスが許可されていません。ブラウザの設定をご確認ください。');
+    let errMsg = 'マイクにアクセスできません。';
+    if (e.name === 'NotAllowedError') {
+      errMsg = 'マイクの使用許可がないか、すでに他のアプリが使用中です。ブラウザの設定を確認してください。';
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+      errMsg = 'マイクが接続されていません。別の入力方法（ファイル選択）をお使いください。';
+    }
+    showError(errMsg);
   }
 }
 
@@ -763,7 +769,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', UPLOAD_ENDPOINT);
-  xhr.timeout = 660000; // 11分
+  xhr.timeout = 600000; // 10分（Dify処理は3-5分想定）
 
   // アップロード進捗
   xhr.upload.addEventListener('progress', e => {
@@ -809,9 +815,14 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   xhr.addEventListener('error', () => {
     stopElapsedTimer();
     hideProcessing();
-    const dbg = 'status=' + xhr.status + ' readyState=' + xhr.readyState + ' body=' + xhr.responseText.substring(0,200);
-    console.error('XHR error:', dbg);
-    showError('通信エラー（' + dbg + '）');
+    let errMsg = '通信エラーが発生しました。';
+    if (xhr.status === 0) {
+      errMsg = 'ネットワークエラー：サーバーに接続できません。接続を確認して再度お試しください。';
+    } else {
+      errMsg = 'サーバーエラー（HTTP ' + xhr.status + '）。しばらく待ってからお試しください。';
+    }
+    console.error('XHR error:', 'status=' + xhr.status + ' readyState=' + xhr.readyState);
+    showError(errMsg);
     resetButtons();
   });
 
@@ -957,9 +968,25 @@ function showProcessing() {
   document.getElementById('processingWrap').classList.add('visible');
   document.getElementById('submitBtn').disabled = true;
   elapsedSeconds = 0;
+
+  const messages = [
+    '音声を分析中です...',
+    'テキストに変換しています...',
+    'AIがSOAPを生成中です...',
+    'もう少しお待ちください...',
+    'まもなく完成です...'
+  ];
+
+  let messageIndex = 0;
+  document.getElementById('processingText').textContent = messages[0];
+
   elapsedInterval = setInterval(() => {
     elapsedSeconds++;
-    document.getElementById('elapsedTime').textContent = '経過時間: ' + elapsedSeconds + '秒';
+    if (elapsedSeconds % 20 === 0 && messageIndex < messages.length - 1) {
+      messageIndex++;
+      document.getElementById('processingText').textContent = messages[messageIndex];
+    }
+    document.getElementById('processingPhase').textContent = '(' + elapsedSeconds + '秒経過)';
   }, 1000);
 }
 function hideProcessing() {
