@@ -6,15 +6,13 @@
 - GitHub: `makita611/AIdealize`（branch: **main**）
 - デプロイ: シンVPS（Cloudflare ではない。PHPを動かすため）
 
-## ⚠️ 注意：LP/サイトHTMLは触らないこと
+## ⚠️ サイト・LPはこのリポジトリではない
 
-`lp/` `service/` `index.html` などのHTMLは **移行前の残骸**で、**本番 aidealize.com には反映されない**。
-aidealize.com 本体は別リポジトリ **`makita611/aidealize-com`（ローカル `sites/aidealize`）** が
-Cloudflare Pages で配信している。
+aidealize.com 本体（LP・service・index 等のHTML）は別リポジトリ
+**`makita611/aidealize-com`（ローカル `sites/aidealize`）** が Cloudflare Pages で配信している。
+このリポジトリには **liff/ しか置かない**（2026-06-19 に古いサイトHTMLの残骸を削除して整理済み）。
 
 | 作業内容 | 触るリポジトリ |
 |---|---|
 | サイト・LP・フォーム・GTM | `aidealize-com`（`sites/aidealize`） |
 | **LINE LIFF の PHP** | **このリポジトリの `liff/`** |
-
-（将来 liff 以外のHTML残骸は削除して、このリポジトリを LIFF 専用に整理する予定）
