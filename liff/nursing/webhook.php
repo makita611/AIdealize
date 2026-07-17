@@ -69,15 +69,25 @@ foreach ($events as $event) {
     // 'file'  : スマホの録音アプリ等で録った音声ファイルを添付（最大1GB）
     if (!in_array($msgType, ['audio', 'file'])) {
 
-        // 音声以外のメッセージが来たら使い方を案内
-        if (in_array($msgType, ['text', 'image', 'video'])) {
-            sendLinePush($userId,
-                "🎤 音声ファイルを送ってください\n\n" .
-                "スマホの録音アプリで録音した音声ファイル（m4a / mp3 / wav）を\n" .
-                "このトークに添付して送信してください。\n\n" .
-                "AIが自動でSOAPノートを作成してお返しします。"
-            );
+        // テキスト・画像・動画は基本スルー（毎回の催促はうるさいので出さない）。
+        // 「使い方」等のヘルプ系ワードを送った時だけ案内を返す。
+        if ($msgType === 'text') {
+            $text = trim($msg['text'] ?? '');
+            $helpWords = ['使い方', 'つかいかた', 'ヘルプ', 'へるぷ', 'help', 'ヘルプ', '？', '?', '説明'];
+            $isHelp = false;
+            foreach ($helpWords as $w) {
+                if (mb_stripos($text, $w) !== false) { $isHelp = true; break; }
+            }
+            if ($isHelp) {
+                sendLinePush($userId,
+                    "🎤 音声ファイルを送ってください\n\n" .
+                    "スマホの録音アプリで録音した音声ファイル（m4a / mp3 / wav）を\n" .
+                    "このトークに添付して送信してください。\n\n" .
+                    "AIが自動でSOAPノートを作成してお返しします。"
+                );
+            }
         }
+        // それ以外（通常のテキスト会話・画像・動画）は黙ってスルー
         continue;
     }
 
