@@ -1,1 +1,5 @@
 .claude/
+
+# 秘密情報（公開リポジトリに載せない・VPSローカルのみ）
+config.local.php
+**/config.local.php

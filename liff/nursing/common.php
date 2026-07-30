@@ -14,6 +14,34 @@ define('DIFY_WORKFLOW',             'http://162.43.77.115/v1/workflows/run');
 define('ALLOWED_EXTENSIONS', ['mp3', 'm4a', 'wav', 'aac', 'webm', 'ogg', 'mpga']);
 
 // ============================================================
+// メール送信設定（Gmail SMTP）
+// SOAP完成時に、送信者のLINE IDに紐づくメアドへ同じ内容を送る
+// ============================================================
+// ⚠️ このリポジトリは公開されている。秘密情報(パスワード等)は絶対にここへ書かず、
+//    VPSローカルの config.local.php（gitignore・curl配布対象外）で define すること。
+@include __DIR__ . '/config.local.php';
+
+define('SMTP_HOST',      'smtp.gmail.com');
+define('SMTP_PORT',      465);                  // SSL/SMTPS
+define('SMTP_USER',      'aidbase11@gmail.com');
+define('SMTP_FROM',      'aidbase11@gmail.com');
+define('SMTP_FROM_NAME', 'はなまるAI 看護記録');
+// SMTP_PASS は config.local.php で定義。未定義ならプレースホルダ（＝送信は失敗しログに記録）。
+if (!defined('SMTP_PASS')) define('SMTP_PASS', 'YOUR_GMAIL_APP_PASSWORD_HERE');
+
+// LINE userId → 送信先メアド 対応表
+// ★マスターはスプレッドシートで管理。増減時はここへ手動コピーしてデプロイ。
+define('SOAP_MAIL_MAP', [
+    'U74593acd8adc5d5d39da7f10b8945c5c' => 'tanaka-h.kyotaku@katch.ne.jp', // 田中ハートケア 酒井
+    'U78de5229d2fc2f11785409fbc0f0810d' => 'a-heart06@outlook.jp',          // 田中ハートケア 岡本
+    'U3a9ae0d285d1ce51d50976af6636abcc' => 'tanaka.h.t@outlook.com',        // 田中ハートケア 角岡
+    'Uce2108be9338f3e0517464d49b7f020c' => 'a-heart02@outlook.jp',          // 田中ハートケア 糟谷
+    'U51074b21afbfa6b060aa4ad9f0660e7d' => 'hm60masa@gmail.com',            // 自社 眞貴田（テスト用）
+]);
+// 対応表に無いuserIdから来た場合の保険（取りこぼし防止）
+define('SOAP_MAIL_FALLBACK', 'aidbase11@gmail.com');
+
+// ============================================================
 // 音声変換・アップロード（シンVPSの変換エンドポイント経由）
 // wavなど大きいファイルをmono mp3に変換してDifyにアップロード
 // 戻り値: ['success'=>bool, 'file_id'=>string, 'error'=>string]
@@ -225,6 +253,91 @@ function sendLinePush(string $userId, string $text): void
         curl_exec($ch);
         curl_close($ch);
     }
+}
+
+// ============================================================
+// メール: SOAP結果を送信者に応じたメアドへ送る
+// 対応表(SOAP_MAIL_MAP)にuserIdが無ければFALLBACKへ
+// 戻り値: ['success'=>bool, 'to'=>string, 'error'=>string]
+// ============================================================
+function sendSoapMail(string $userId, string $soapText): array
+{
+    $to = SOAP_MAIL_MAP[$userId] ?? SOAP_MAIL_FALLBACK;
+    if (empty($to)) return ['success' => false, 'to' => '', 'error' => '送信先メアド未設定'];
+
+    $subject = 'はなまるAI 看護記録（SOAP） ' . date('Y-m-d H:i');
+    $body    = $soapText .
+        "\n\n─────────────────\n" .
+        "⚠️ AIの出力です。必ずご確認・修正のうえご使用ください。\n" .
+        "電子カルテ等にコピー＆ペーストしてお使いください。\n" .
+        "※このメールはLINEに送信された音声から自動生成されています。";
+
+    $res = smtpSend($to, $subject, $body);
+    $res['to'] = $to;
+    return $res;
+}
+
+// ============================================================
+// SMTP: Gmail(smtp.gmail.com:465 SSL)へAUTH LOGINで1通送信
+// 外部ライブラリ不要（fsockopen + openssl）
+// 件名・本文は日本語対応のためMIME/base64エンコード
+// ============================================================
+function smtpSend(string $to, string $subject, string $body): array
+{
+    $errno = 0; $errstr = '';
+    $fp = @stream_socket_client('ssl://' . SMTP_HOST . ':' . SMTP_PORT, $errno, $errstr, 30);
+    if (!$fp) return ['success' => false, 'error' => "connect: {$errstr} ({$errno})"];
+    stream_set_timeout($fp, 30);
+
+    // SMTP応答を読む（複数行対応：4文字目が空白なら最終行）
+    $read = function () use ($fp): string {
+        $data = '';
+        while (($line = fgets($fp, 515)) !== false) {
+            $data .= $line;
+            if (isset($line[3]) && $line[3] === ' ') break;
+        }
+        return $data;
+    };
+    $put = function (string $c) use ($fp): void { fwrite($fp, $c . "\r\n"); };
+    $ok  = function (string $resp, int $code): bool { return substr($resp, 0, 3) === (string)$code; };
+
+    $fail = function (string $stage, string $resp) use ($fp): array {
+        @fwrite($fp, "QUIT\r\n");
+        fclose($fp);
+        return ['success' => false, 'error' => "{$stage}: " . trim($resp)];
+    };
+
+    if (!$ok($read(), 220))                      return $fail('greet', '接続応答なし');
+    $put('EHLO aidealize.com');
+    if (!$ok($r = $read(), 250))                 return $fail('ehlo', $r);
+    $put('AUTH LOGIN');
+    if (!$ok($r = $read(), 334))                 return $fail('auth', $r);
+    $put(base64_encode(SMTP_USER));
+    if (!$ok($r = $read(), 334))                 return $fail('user', $r);
+    $put(base64_encode(SMTP_PASS));
+    if (!$ok($r = $read(), 235))                 return $fail('pass', $r); // 認証失敗はここ
+    $put('MAIL FROM:<' . SMTP_FROM . '>');
+    if (!$ok($r = $read(), 250))                 return $fail('mailfrom', $r);
+    $put('RCPT TO:<' . $to . '>');
+    $r = $read();
+    if (!$ok($r, 250) && !$ok($r, 251))          return $fail('rcpt', $r);
+    $put('DATA');
+    if (!$ok($r = $read(), 354))                 return $fail('data', $r);
+
+    // ---- ヘッダ＋本文（本文はbase64でドット詰め問題を回避）----
+    $headers  = 'Date: ' . date('r') . "\r\n";
+    $headers .= 'From: =?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?= <' . SMTP_FROM . ">\r\n";
+    $headers .= 'To: <' . $to . ">\r\n";
+    $headers .= 'Subject: =?UTF-8?B?' . base64_encode($subject) . "?=\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $headers .= "Content-Transfer-Encoding: base64\r\n";
+    $put($headers . "\r\n" . chunk_split(base64_encode($body)) . '.');
+    if (!$ok($r = $read(), 250))                 return $fail('send', $r);
+
+    $put('QUIT');
+    fclose($fp);
+    return ['success' => true, 'error' => ''];
 }
 
 // ============================================================

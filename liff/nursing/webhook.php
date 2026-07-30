@@ -168,6 +168,14 @@ foreach ($events as $event) {
             "⚠️ AIの出力です。必ずご確認・修正してください。\n" .
             "電子カルテ等にコピー＆ペーストしてご使用ください。";
         sendLinePush($userId, $message);
+
+        // ---- PC宛にメールでも同じSOAPを送信（送信者IDで宛先を振り分け）----
+        $mailResult = sendSoapMail($userId, $difyResult['text']);
+        if (!$mailResult['success']) {
+            error_log('[hana] SOAP mail failed userId=' . $userId .
+                      ' to=' . ($mailResult['to'] ?? '') .
+                      ' error=' . $mailResult['error']);
+        }
     } else {
         sendLinePush($userId,
             "❌ 記録の生成に失敗しました\n\n" .
