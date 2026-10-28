@@ -1,6 +1,8 @@
 <?php
-$DIFY_API_KEY = 'app-ovdswkD1Gu';
-$DIFY_UPLOAD  = 'http://162.43.77.115/v1/files/upload';
+// 秘密情報は common.php 経由で config.local.php から読み込む（ベタ書き禁止）
+require_once __DIR__ . '/../common.php';
+$DIFY_API_KEY = DIFY_API_KEY;
+$DIFY_UPLOAD  = DIFY_UPLOAD;
 
 $tmpFile = tempnam(sys_get_temp_dir(), 'test') . '.m4a';
 file_put_contents($tmpFile, str_repeat("\0", 1024));

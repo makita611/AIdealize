@@ -1,16 +1,18 @@
 <?php
 // =============================================
-// ★書き換え箇所
+// 秘密情報は config.local.php（gitignore・VPSローカルのみ）から読み込む。
+// 公開リポにはベタ書きしないこと。未定義時はプレースホルダにフォールバック。
 // =============================================
-define('LINE_CHANNEL_ACCESS_TOKEN', 'gCntqA7sE/QhLfqHD/F4/hKMsHVl0bOvofa08bmKvXBTBD7dkGhGpbOa9EUnpvs45dW6eR6Z/8efBU8AXwJqVRFVQbAu8GE/UXKo4i59y52rskvM+t8myIalw195yCnKrYLCO37zp66cknwV+0bREAdB04t89/1O/w1cDnyilFU=');
-define('DIFY_API_KEY',              'app-ovdswSVkoArZa7TmNPjkD1Gu');
-define('DIFY_UPLOAD',               'http://162.43.77.115/v1/files/upload');
-define('DIFY_WORKFLOW',             'http://162.43.77.115/v1/workflows/run');
-// =============================================
+@include __DIR__ . '/../config.local.php';
+if (!defined('LINE_CHANNEL_ACCESS_TOKEN')) define('LINE_CHANNEL_ACCESS_TOKEN', 'YOUR_LINE_CHANNEL_ACCESS_TOKEN');
+if (!defined('DIFY_API_KEY'))              define('DIFY_API_KEY',              'YOUR_DIFY_API_KEY');
+if (!defined('UPLOAD_SHARED_SECRET'))      define('UPLOAD_SHARED_SECRET',      'YOUR_UPLOAD_SHARED_SECRET');
+if (!defined('DIFY_UPLOAD'))               define('DIFY_UPLOAD',               'http://162.43.77.115/v1/files/upload');
+if (!defined('DIFY_WORKFLOW'))             define('DIFY_WORKFLOW',             'http://162.43.77.115/v1/workflows/run');
 
 // 直接アクセス禁止（upload.phpからのみ呼び出し可）
 $secret = $_POST['secret'] ?? '';
-if ($secret !== 'HANAMARU_SECRET_2026') {
+if (!hash_equals(UPLOAD_SHARED_SECRET, $secret)) {
     http_response_code(403);
     exit;
 }

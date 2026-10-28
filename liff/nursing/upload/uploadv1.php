@@ -6,11 +6,13 @@
  */
 
 // =============================================
-// ★ここだけ変更してください
+// 秘密情報は config.local.php（gitignore・VPSローカルのみ）から読み込む。
+// 公開リポにはベタ書きしないこと。未定義時はプレースホルダにフォールバック。
 // =============================================
-define('LINE_CHANNEL_ACCESS_TOKEN', 'gCntqA7sE/QhLfqHD/F4/hKMsHVl0bOvofa08bmKvXBTBD7dkGhGpbOa9EUnpvs45dW6eR6Z/8efBU8AXwJqVRFVQbAu8GE/UXKo4i59y52rskvM+t8myIalw195yCnKrYLCO37zp66cknwV+0bREAdB04t89/1O/w1cDnyilFU=');
-define('DIFY_API_KEY',              'app-ovdswSVkoArZa7TmNPjkD1Gu');
-define('DIFY_ENDPOINT',             'http://dify.aidealize.com/v1/workflows/run'); // またはhttps://
+@include __DIR__ . '/../config.local.php';
+if (!defined('LINE_CHANNEL_ACCESS_TOKEN')) define('LINE_CHANNEL_ACCESS_TOKEN', 'YOUR_LINE_CHANNEL_ACCESS_TOKEN');
+if (!defined('DIFY_API_KEY'))              define('DIFY_API_KEY',              'YOUR_DIFY_API_KEY');
+if (!defined('DIFY_ENDPOINT'))             define('DIFY_ENDPOINT',             'http://dify.aidealize.com/v1/workflows/run');
 define('UPLOAD_DIR',                __DIR__ . '/uploads/');
 // =============================================
 

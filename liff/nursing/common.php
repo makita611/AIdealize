@@ -1,14 +1,28 @@
 <?php
 // ============================================================
 // はなまるAI 看護記録 — 共通設定・共通処理
-// ここの定数だけ変更すれば全ファイルに反映されます
+// ============================================================
+// ⚠️ このリポジトリは公開(PUBLIC)されている。
+//    秘密情報（LINEトークン/シークレット・Dify APIキー・共有シークレット・
+//    顧客メール等の個人情報）は絶対にここへ書かないこと。
+//    それらは VPSローカルの config.local.php（gitignore・curl配布対象外）で
+//    define する。このファイルには未定義時のプレースホルダのみを置く。
 // ============================================================
 
-define('LINE_CHANNEL_ACCESS_TOKEN', 'gCntqA7sE/QhLfqHD/F4/hKMsHVl0bOvofa08bmKvXBTBD7dkGhGpbOa9EUnpvs45dW6eR6Z/8efBU8AXwJqVRFVQbAu8GE/UXKo4i59y52rskvM+t8myIalw195yCnKrYLCO37zp66cknwV+0bREAdB04t89/1O/w1cDnyilFU=');
-define('LINE_CHANNEL_SECRET',       'ef658426103a6446fcc1a1001c5f0aa0'); // ← LINE Developers Console で確認
-define('DIFY_API_KEY',              'app-ovdswSVkoArZa7TmNPjkD1Gu');
-define('DIFY_UPLOAD',               'http://162.43.77.115/v1/files/upload');
-define('DIFY_WORKFLOW',             'http://162.43.77.115/v1/workflows/run');
+// 秘密情報を最初に読み込む（config.local.php の値が最優先される）
+@include __DIR__ . '/config.local.php';
+
+// --- 秘密情報のプレースホルダ（config.local.php で未定義だった場合のみ有効）---
+if (!defined('LINE_CHANNEL_ACCESS_TOKEN')) define('LINE_CHANNEL_ACCESS_TOKEN', 'YOUR_LINE_CHANNEL_ACCESS_TOKEN');
+if (!defined('LINE_CHANNEL_SECRET'))       define('LINE_CHANNEL_SECRET',       'YOUR_LINE_CHANNEL_SECRET');
+if (!defined('DIFY_API_KEY'))              define('DIFY_API_KEY',              'YOUR_DIFY_API_KEY');
+if (!defined('CONVERTER_SECRET'))          define('CONVERTER_SECRET',          'YOUR_CONVERTER_SECRET');
+if (!defined('UPLOAD_SHARED_SECRET'))      define('UPLOAD_SHARED_SECRET',      'YOUR_UPLOAD_SHARED_SECRET');
+
+// --- 非機密のエンドポイント（運用情報。必要なら config.local.php で上書き可）---
+if (!defined('DIFY_UPLOAD'))   define('DIFY_UPLOAD',   'http://162.43.77.115/v1/files/upload');
+if (!defined('DIFY_WORKFLOW')) define('DIFY_WORKFLOW', 'http://162.43.77.115/v1/workflows/run');
+if (!defined('CONVERTER_URL')) define('CONVERTER_URL', 'http://127.0.0.1:8088/convert.php');
 
 // 対応音声形式
 define('ALLOWED_EXTENSIONS', ['mp3', 'm4a', 'wav', 'aac', 'webm', 'ogg', 'mpga']);
@@ -17,10 +31,6 @@ define('ALLOWED_EXTENSIONS', ['mp3', 'm4a', 'wav', 'aac', 'webm', 'ogg', 'mpga']
 // メール送信設定（Gmail SMTP）
 // SOAP完成時に、送信者のLINE IDに紐づくメアドへ同じ内容を送る
 // ============================================================
-// ⚠️ このリポジトリは公開されている。秘密情報(パスワード等)は絶対にここへ書かず、
-//    VPSローカルの config.local.php（gitignore・curl配布対象外）で define すること。
-@include __DIR__ . '/config.local.php';
-
 define('SMTP_HOST',      'smtp.gmail.com');
 define('SMTP_PORT',      465);                  // SSL/SMTPS
 define('SMTP_USER',      'aidbase11@gmail.com');
@@ -29,25 +39,17 @@ define('SMTP_FROM_NAME', 'はなまるAI 看護記録');
 // SMTP_PASS は config.local.php で定義。未定義ならプレースホルダ（＝送信は失敗しログに記録）。
 if (!defined('SMTP_PASS')) define('SMTP_PASS', 'YOUR_GMAIL_APP_PASSWORD_HERE');
 
-// LINE userId → 送信先メアド 対応表
-// ★マスターはスプレッドシートで管理。増減時はここへ手動コピーしてデプロイ。
-define('SOAP_MAIL_MAP', [
-    'U74593acd8adc5d5d39da7f10b8945c5c' => 'tanaka-h.kyotaku@katch.ne.jp', // 田中ハートケア 酒井
-    'U78de5229d2fc2f11785409fbc0f0810d' => 'a-heart06@outlook.jp',          // 田中ハートケア 岡本
-    'U3a9ae0d285d1ce51d50976af6636abcc' => 'tanaka.h.t@outlook.com',        // 田中ハートケア 角岡
-    'Uce2108be9338f3e0517464d49b7f020c' => 'a-heart02@outlook.jp',          // 田中ハートケア 糟谷
-    'U51074b21afbfa6b060aa4ad9f0660e7d' => 'hm60masa@gmail.com',            // 自社 眞貴田（テスト用）
-]);
+// LINE userId → 送信先メアド 対応表（顧客メール＝個人情報のため config.local.php で定義）
+// ★マスターはスプレッドシートで管理。増減時は config.local.php を編集してデプロイ。
+if (!defined('SOAP_MAIL_MAP')) define('SOAP_MAIL_MAP', []);
 // 対応表に無いuserIdから来た場合の保険（取りこぼし防止）
-define('SOAP_MAIL_FALLBACK', 'aidbase11@gmail.com');
+if (!defined('SOAP_MAIL_FALLBACK')) define('SOAP_MAIL_FALLBACK', 'aidbase11@gmail.com');
 
 // ============================================================
 // 音声変換・アップロード（シンVPSの変換エンドポイント経由）
 // wavなど大きいファイルをmono mp3に変換してDifyにアップロード
 // 戻り値: ['success'=>bool, 'file_id'=>string, 'error'=>string]
 // ============================================================
-define('CONVERTER_URL',    'http://162.43.77.115:8088/convert.php');
-define('CONVERTER_SECRET', 'HANA_CONV_2026');
 
 function convertAndUpload(string $filePath, string $ext, string $userId): array
 {
