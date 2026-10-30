@@ -73,11 +73,10 @@ foreach ($events as $event) {
         // 「使い方」等のヘルプ系ワードを送った時だけ案内を返す。
         if ($msgType === 'text') {
             $text = trim($msg['text'] ?? '');
-            $helpWords = ['使い方', 'つかいかた', 'ヘルプ', 'へるぷ', 'help', 'ヘルプ', '？', '?', '説明'];
-            $isHelp = false;
-            foreach ($helpWords as $w) {
-                if (mb_stripos($text, $w) !== false) { $isHelp = true; break; }
-            }
+            // 会話中の「〜ですか？」等で誤爆しないよう、短いコマンド形式の完全一致のみ反応
+            $helpWords = ['使い方', 'つかいかた', 'ヘルプ', 'へるぷ', 'help', '説明'];
+            $norm = mb_strtolower(preg_replace('/[\s　?？!！。]+/u', '', $text));
+            $isHelp = in_array($norm, $helpWords, true);
             if ($isHelp) {
                 sendLinePush($userId,
                     "🎤 音声ファイルを送ってください\n\n" .
